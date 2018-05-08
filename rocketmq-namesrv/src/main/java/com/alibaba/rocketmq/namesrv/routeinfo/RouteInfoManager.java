@@ -44,6 +44,9 @@ import com.alibaba.rocketmq.common.protocol.RequestCode;
 import com.alibaba.rocketmq.common.protocol.body.ClusterInfo;
 import com.alibaba.rocketmq.common.protocol.body.TopicConfigSerializeWrapper;
 import com.alibaba.rocketmq.common.protocol.body.TopicList;
+import com.alibaba.rocketmq.common.protocol.header.namesrv.MasterChangeRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.namesrv.RegisterBrokerRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.namesrv.RegisterBrokerResponseHeader;
 import com.alibaba.rocketmq.common.protocol.route.BrokerData;
 import com.alibaba.rocketmq.common.protocol.route.QueueData;
 import com.alibaba.rocketmq.common.protocol.route.TopicRouteData;
@@ -65,7 +68,6 @@ public class RouteInfoManager {
     private final HashMap<String/* clusterName */, Set<String/* brokerName */>> clusterAddrTable;
     private final HashMap<String/* brokerAddr */, BrokerLiveInfo> brokerLiveTable;
     private final HashMap<String/* brokerAddr */, List<String>/* Filter Server */> filterServerTable;
-
 
     public RouteInfoManager() {
         this.topicQueueTable = new HashMap<String, List<QueueData>>(1024);
@@ -110,7 +112,7 @@ public class RouteInfoManager {
 
         return topicList.encode();
     }
-
+    
     public RegisterBrokerResult registerBroker(//
                                                final String clusterName,// 1
                                                final String brokerAddr,// 2
@@ -119,14 +121,14 @@ public class RouteInfoManager {
                                                final String haServerAddr,// 5
                                                final TopicConfigSerializeWrapper topicConfigWrapper,// 6
                                                final List<String> filterServerList, // 7
-                                               final Channel channel// 8
+                                               final Channel channel,// 8
+                                               final long originalBrokerId// 8
     ) {
         RegisterBrokerResult result = new RegisterBrokerResult();
         try {
             try {
                 this.lock.writeLock().lockInterruptibly();
-
-
+                
                 Set<String> brokerNames = this.clusterAddrTable.get(clusterName);
                 if (null == brokerNames) {
                     brokerNames = new HashSet<String>();
@@ -196,12 +198,32 @@ public class RouteInfoManager {
                         }
                     }
                 }
+                
+                
+                if(originalBrokerId != -1){// 主从进行了切换
+                	if(originalBrokerId > 0 && brokerId == MixAll.MASTER_ID){// 从 -> 主
+                		// 1.清除originalBrokerId的信息
+                		HashMap<Long, String> brokerAddrs = brokerData.getBrokerAddrs();
+                		brokerAddrs.remove(originalBrokerId);
+                		
+                		// 2.告诉其他Slave master变化
+                    	Collection<String> values = brokerAddrs.values();
+                    	for(String slaveAddr : values){
+                    		if(slaveAddr.equals(brokerAddr)){
+                    			continue;
+                    		}
+                    		notificationSlaveMasterChange(slaveAddr, brokerAddr);
+                    	}
+                	}
+                }
             } finally {
                 this.lock.writeLock().unlock();
             }
         } catch (Exception e) {
             log.error("registerBroker Exception", e);
         }
+        
+        
 
         return result;
     }
@@ -569,8 +591,6 @@ public class RouteInfoManager {
                         }
                     }
                     
-                    
-                    
                 } finally {
                     this.lock.writeLock().unlock();
                 }
@@ -578,10 +598,31 @@ public class RouteInfoManager {
                 log.error("onChannelDestroy Exception", e);
             }
         }
+        
+        notificationSlaveUpMaster(brokerAddrFound);
     }
     
-    private void notificationSlaveUpMaster(Channel channel, String addr){
-    	String slaveAddr = getOneOfSlave(addr);
+    private void notificationSlaveMasterChange(String slaveAddr,String masterAddr){
+    	BrokerLiveInfo brokerLiveInfo = this.brokerLiveTable.get(masterAddr);
+    	 BrokerLiveInfo slaveBrokerLiveInfo = brokerLiveTable.get(slaveAddr);
+        if (brokerLiveInfo != null && slaveBrokerLiveInfo != null) {
+        	MasterChangeRequestHeader rquestHeader = new MasterChangeRequestHeader();
+        	rquestHeader.setHaServerAddr(brokerLiveInfo.getHaServerAddr());
+        	rquestHeader.setMasterAddr(masterAddr);
+        	
+        	
+        	Channel slaveChannel = slaveBrokerLiveInfo.getChannel();
+        	RemotingCommand request =
+                    RemotingCommand.createRequestCommand(RequestCode.MASTER_DOWN, rquestHeader);
+            slaveChannel.writeAndFlush(request);
+        }
+    }
+    
+    private void notificationSlaveUpMaster(String destroyBrokerAddr){
+    	String slaveAddr = getOneOfSlave(destroyBrokerAddr);
+    	if(slaveAddr == null || "".equals(slaveAddr.trim())){
+    		return;
+    	}
         BrokerLiveInfo slaveBrokerLiveInfo = brokerLiveTable.get(slaveAddr);
         Channel slaveChannel = slaveBrokerLiveInfo.getChannel();
         

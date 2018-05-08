@@ -39,14 +39,26 @@ public class RegisterBrokerRequestHeader implements CommandCustomHeader {
     private String haServerAddr;
     @CFNotNull
     private Long brokerId;
+    @CFNotNull
+    private Long originalBrokerId;
 
 
     @Override
     public void checkFields() throws RemotingCommandException {
     }
+    
+
+    public Long getOriginalBrokerId() {
+		return originalBrokerId;
+	}
 
 
-    public String getBrokerName() {
+	public void setOriginalBrokerId(Long originalBrokerId) {
+		this.originalBrokerId = originalBrokerId;
+	}
+
+
+	public String getBrokerName() {
         return brokerName;
     }
 

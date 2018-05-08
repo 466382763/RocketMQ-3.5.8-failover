@@ -648,7 +648,9 @@ public class BrokerController {
                 topicConfigWrapper,//
                 this.filterServerManager.buildNewFilterServerList(),//
                 oneway,//
-                this.brokerConfig.getRegisterBrokerTimeoutMills());
+                this.brokerConfig.getRegisterBrokerTimeoutMills(),
+                this.brokerConfig.getOriginalBrokerId()
+                );
 
         if (registerBrokerResult != null) {
             if (this.updateMasterHAServerAddrPeriodically && registerBrokerResult.getHaServerAddr() != null) {

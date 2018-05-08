@@ -25,6 +25,8 @@ import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.common.namesrv.RegisterBrokerResult;
 import com.alibaba.rocketmq.common.protocol.RequestCode;
 import com.alibaba.rocketmq.common.protocol.body.TopicConfigSerializeWrapper;
+import com.alibaba.rocketmq.common.protocol.header.PullMessageResponseHeader;
+import com.alibaba.rocketmq.common.protocol.header.namesrv.MasterChangeRequestHeader;
 import com.alibaba.rocketmq.remoting.exception.RemotingCommandException;
 import com.alibaba.rocketmq.remoting.netty.NettyRequestProcessor;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
@@ -35,18 +37,18 @@ import com.alibaba.rocketmq.store.config.MessageStoreConfig;
 /**
  * @author shijia.wxr
  */
-public class MasterDownProcessor extends AbstractSendMessageProcessor implements NettyRequestProcessor {
+public class MasterChangeProcessor extends AbstractSendMessageProcessor implements NettyRequestProcessor {
 
 
-    public MasterDownProcessor(final BrokerController brokerController) {
+    public MasterChangeProcessor(final BrokerController brokerController) {
         super(brokerController);
     }
 
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) throws RemotingCommandException {
         switch (request.getCode()) {
-            case RequestCode.MASTER_DOWN:
-                return this.processMasterDown(ctx, request);
+            case RequestCode.MASTER_CHANGE:
+                return this.processMasterChange(ctx, request);
             default:
                 return null;
         }
@@ -57,15 +59,15 @@ public class MasterDownProcessor extends AbstractSendMessageProcessor implements
         return this.brokerController.getMessageStore().isOSPageCacheBusy();
     }
 
-    private RemotingCommand processMasterDown(final ChannelHandlerContext ctx, final RemotingCommand request)
+    private RemotingCommand processMasterChange(final ChannelHandlerContext ctx, final RemotingCommand request)
             throws RemotingCommandException {
     	
-    	BrokerConfig brokerConfig = brokerController.getBrokerConfig();
-    	brokerConfig.setOriginalBrokerId(brokerConfig.getBrokerId());
-    	brokerConfig.setBrokerId(MixAll.MASTER_ID);
+    	RemotingCommand response = RemotingCommand.createResponseCommand(MasterChangeRequestHeader.class);
+        final MasterChangeRequestHeader requestHeader = (MasterChangeRequestHeader) response.readCustomHeader();
     	
-    	MessageStoreConfig messageStoreConfig = brokerController.getMessageStoreConfig();
-    	messageStoreConfig.setBrokerRole(BrokerRole.ASYNC_MASTER);
+    	brokerController.getMessageStore().updateHaMasterAddress(requestHeader.getHaServerAddr());
+        
+    	brokerController.getSlaveSynchronize().setMasterAddr(requestHeader.getMasterAddr());
     	
     	brokerController.registerBrokerAll(false, false);
         return null;

@@ -111,7 +111,8 @@ public class BrokerOuterAPI {
                                                   final TopicConfigSerializeWrapper topicConfigWrapper, // 6
                                                   final List<String> filterServerList, // 7
                                                   final boolean oneway,// 8
-                                                  final int timeoutMills// 9
+                                                  final int timeoutMills,// 9
+                                                  final long originalBrokerId// 10
     ) {
         RegisterBrokerResult registerBrokerResult = null;
 
@@ -120,7 +121,7 @@ public class BrokerOuterAPI {
             for (String namesrvAddr : nameServerAddressList) {
                 try {
                     RegisterBrokerResult result = this.registerBroker(namesrvAddr, clusterName, brokerAddr, brokerName, brokerId,
-                            haServerAddr, topicConfigWrapper, filterServerList, oneway, timeoutMills);
+                            haServerAddr, topicConfigWrapper, filterServerList, oneway, timeoutMills, originalBrokerId);
                     if (result != null) {
                         registerBrokerResult = result;
                     }
@@ -145,7 +146,8 @@ public class BrokerOuterAPI {
                                                 final TopicConfigSerializeWrapper topicConfigWrapper, // 6
                                                 final List<String> filterServerList, // 7
                                                 final boolean oneway,// 8
-                                                final int timeoutMills// 9
+                                                final int timeoutMills,// 9
+                                                final long originalBrokerId// 9
     ) throws RemotingCommandException, MQBrokerException, RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException,
             InterruptedException {
         RegisterBrokerRequestHeader requestHeader = new RegisterBrokerRequestHeader();
@@ -154,6 +156,7 @@ public class BrokerOuterAPI {
         requestHeader.setBrokerName(brokerName);
         requestHeader.setClusterName(clusterName);
         requestHeader.setHaServerAddr(haServerAddr);
+        requestHeader.setOriginalBrokerId(originalBrokerId);
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.REGISTER_BROKER, requestHeader);
 
         RegisterBrokerBody requestBody = new RegisterBrokerBody();

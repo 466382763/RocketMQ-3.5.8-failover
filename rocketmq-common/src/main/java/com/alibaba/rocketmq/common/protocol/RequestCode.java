@@ -155,5 +155,7 @@ public class RequestCode {
     public static final int GET_BROKER_CONSUME_STATS = 317;
     
     public static final int MASTER_DOWN = 318;
+    
+    public static final int MASTER_CHANGE = 319;
 
 }

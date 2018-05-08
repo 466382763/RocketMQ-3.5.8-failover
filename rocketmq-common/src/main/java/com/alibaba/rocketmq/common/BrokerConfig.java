@@ -40,6 +40,7 @@ public class BrokerConfig {
     private String brokerClusterName = "DefaultCluster";
     @ImportantField
     private long brokerId = MixAll.MASTER_ID;
+    private long originalBrokerId = -1;
     private int brokerPermission = PermName.PERM_READ | PermName.PERM_WRITE;
     private int defaultTopicQueueNums = 8;
     @ImportantField
@@ -349,9 +350,16 @@ public class BrokerConfig {
     public void setBrokerId(long brokerId) {
         this.brokerId = brokerId;
     }
+    
+    public long getOriginalBrokerId() {
+		return originalBrokerId;
+	}
 
+	public void setOriginalBrokerId(long originalBrokerId) {
+		this.originalBrokerId = originalBrokerId;
+	}
 
-    public boolean isAutoCreateSubscriptionGroup() {
+	public boolean isAutoCreateSubscriptionGroup() {
         return autoCreateSubscriptionGroup;
     }
 
