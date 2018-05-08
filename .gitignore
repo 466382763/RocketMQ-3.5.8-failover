@@ -7,3 +7,6 @@ target/
 .idea/
 *.versionsBackup
 *.DS_Store
+*.markers
+.metadata/
+
