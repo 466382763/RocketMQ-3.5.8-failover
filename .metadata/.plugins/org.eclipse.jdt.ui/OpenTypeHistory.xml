@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<typeInfoHistroy>
-<typeInfo handle="=rocketmq-example/src\/main\/java&lt;com.alibaba.rocketmq.example.simple{TestProducer.java[TestProducer" modifiers="1" timestamp="1525512203368"/>
-<typeInfo handle="=rocketmq-client/src\/main\/java&lt;com.alibaba.rocketmq.client.consumer.listener{ConsumeConcurrentlyContext.java[ConsumeConcurrentlyContext" modifiers="1" timestamp="1525512202043"/>
-<typeInfo handle="=rocketmq-client/src\/main\/java&lt;com.alibaba.rocketmq.client.consumer{DefaultMQPushConsumer.java[DefaultMQPushConsumer" modifiers="1" timestamp="1525512201992"/>
-<typeInfo handle="=rocketmq-store/src\/main\/java&lt;com.alibaba.rocketmq.store.ha{HAService.java[HAService[HAClient" modifiers="0" timestamp="1525513012147"/>
-<typeInfo handle="=rocketmq-store/src\/main\/java&lt;com.alibaba.rocketmq.store.stats{BrokerStats.java[BrokerStats" modifiers="1" timestamp="1525512203942"/>
-<typeInfo handle="=rocketmq-broker/src\/main\/java&lt;com.alibaba.rocketmq.broker{BrokerStartup.java[BrokerStartup" modifiers="1" timestamp="1525514065789"/>
-</typeInfoHistroy>
