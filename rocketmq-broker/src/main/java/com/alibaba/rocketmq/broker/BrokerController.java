@@ -51,6 +51,7 @@ import com.alibaba.rocketmq.store.config.BrokerRole;
 import com.alibaba.rocketmq.store.config.MessageStoreConfig;
 import com.alibaba.rocketmq.store.stats.BrokerStats;
 import com.alibaba.rocketmq.store.stats.BrokerStatsManager;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -337,6 +338,8 @@ public class BrokerController {
         sendProcessor.registerSendMessageHook(sendMessageHookList);
         sendProcessor.registerConsumeMessageHook(consumeMessageHookList);
 
+        this.remotingServer.registerProcessor(RequestCode.MASTER_DOWN, sendProcessor, this.sendMessageExecutor);
+        
         this.remotingServer.registerProcessor(RequestCode.SEND_MESSAGE, sendProcessor, this.sendMessageExecutor);
         
         
@@ -384,7 +387,7 @@ public class BrokerController {
          * 自定义
          * 
          */
-        this.remotingServer.registerProcessor(RequestCode.MASTER_DOWN, new EndTransactionProcessor(this), this.clientManageExecutor);
+        this.remotingServer.registerProcessor(RequestCode.MASTER_DOWN, new MasterDownProcessor(this), this.clientManageExecutor);
 
         /**
          * EndTransactionProcessor
