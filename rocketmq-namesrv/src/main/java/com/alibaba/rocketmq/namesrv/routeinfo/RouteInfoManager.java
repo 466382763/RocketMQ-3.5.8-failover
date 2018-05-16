@@ -472,6 +472,7 @@ public class RouteInfoManager {
     }
 
     public void onChannelDestroy(String remoteAddr, Channel channel) {
+    	boolean isMaster = false;
         String brokerAddrFound = null;
         if (channel != null) {
             try {
@@ -523,6 +524,9 @@ public class RouteInfoManager {
                             if (brokerAddr.equals(brokerAddrFound)) {
                                 brokerNameFound = brokerData.getBrokerName();
                                 it.remove();
+                                if(brokerId == MixAll.MASTER_ID){
+                                	isMaster = true;
+                                }
                                 log.info(
                                         "remove brokerAddr[{}, {}] from brokerAddrTable, because channel destroyed",
                                         brokerId, brokerAddr);
@@ -598,8 +602,9 @@ public class RouteInfoManager {
                 log.error("onChannelDestroy Exception", e);
             }
         }
-        
-        notificationSlaveUpMaster(brokerAddrFound);
+        if(isMaster){
+        	notificationSlaveUpMaster(brokerAddrFound);
+        }
     }
     
     private void notificationSlaveMasterChange(String slaveAddr,String masterAddr){
@@ -633,20 +638,7 @@ public class RouteInfoManager {
     }
     
     private String getOneOfSlave(String brokerAddr){
-		boolean isMaster = false;
 		Set<Entry<String, BrokerData>> entrySet = brokerAddrTable.entrySet();
-		for (Entry<String, BrokerData> entry : entrySet) {
-			BrokerData brokerData = entry.getValue();
-			HashMap<Long, String> brokerAddrs = brokerData.getBrokerAddrs();
-			String masterAddr = brokerAddrs.get(0);
-			if (masterAddr.equals(brokerAddr)) {
-				isMaster = true;
-				break;
-			}
-		}
-		if (!isMaster) {
-			return null;
-		}
 		for (Entry<String, BrokerData> entry : entrySet) {
 			BrokerData brokerData = entry.getValue();
 			HashMap<Long, String> brokerAddrs = brokerData.getBrokerAddrs();

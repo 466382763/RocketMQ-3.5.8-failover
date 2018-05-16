@@ -379,6 +379,12 @@ public class BrokerController {
 
         this.fastRemotingServer.registerProcessor(RequestCode.UPDATE_CONSUMER_OFFSET, clientProcessor, this.clientManageExecutor);
         this.fastRemotingServer.registerProcessor(RequestCode.QUERY_CONSUMER_OFFSET, clientProcessor, this.clientManageExecutor);
+        
+        /**
+         * 自定义
+         * 
+         */
+        this.remotingServer.registerProcessor(RequestCode.MASTER_DOWN, new EndTransactionProcessor(this), this.clientManageExecutor);
 
         /**
          * EndTransactionProcessor
