@@ -16,8 +16,12 @@
  */
 package com.alibaba.rocketmq.broker.out;
 
+import com.alibaba.rocketmq.broker.BrokerController;
+import com.alibaba.rocketmq.broker.latency.BrokerFixedThreadPoolExecutor;
+import com.alibaba.rocketmq.broker.processor.MasterDownProcessor;
 import com.alibaba.rocketmq.client.exception.MQBrokerException;
 import com.alibaba.rocketmq.common.MixAll;
+import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.common.namesrv.RegisterBrokerResult;
 import com.alibaba.rocketmq.common.namesrv.TopAddressing;
@@ -33,12 +37,15 @@ import com.alibaba.rocketmq.remoting.exception.*;
 import com.alibaba.rocketmq.remoting.netty.NettyClientConfig;
 import com.alibaba.rocketmq.remoting.netty.NettyRemotingClient;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -50,11 +57,37 @@ public class BrokerOuterAPI {
     private final RemotingClient remotingClient;
     private final TopAddressing topAddressing = new TopAddressing(MixAll.WS_ADDR);
     private String nameSrvAddr = null;
+    private LinkedBlockingQueue<Runnable> sendThreadPoolQueue = null;
+    
+    private BrokerFixedThreadPoolExecutor sendMessageExecutor = new BrokerFixedThreadPoolExecutor(//
+            10,//
+            10,//
+            1000 * 60,//
+            TimeUnit.MILLISECONDS,//
+            this.sendThreadPoolQueue,//
+            new ThreadFactoryImpl("SendMessageThread_"));
 
 
-    public BrokerOuterAPI(final NettyClientConfig nettyClientConfig) {
-        this(nettyClientConfig, null);
+    public BrokerOuterAPI(final NettyClientConfig nettyClientConfig, BrokerController brokerController) {
+    	sendThreadPoolQueue = new LinkedBlockingQueue<Runnable>(1000);
+    	sendMessageExecutor = new BrokerFixedThreadPoolExecutor(//
+                10,//
+                10,//
+                1000 * 60,//
+                TimeUnit.MILLISECONDS,//
+                this.sendThreadPoolQueue,//
+                new ThreadFactoryImpl("SendMessageThread_"));
+    	
+    	
+    	
+    	this.remotingClient = new NettyRemotingClient(nettyClientConfig);
+    	this.remotingClient.registerProcessor(RequestCode.MASTER_DOWN, new MasterDownProcessor(brokerController), sendMessageExecutor);
+        this.remotingClient.registerRPCHook(null);
     }
+    
+//    public BrokerOuterAPI(final NettyClientConfig nettyClientConfig) {
+//        this(nettyClientConfig, null);
+//    }
 
 
     public BrokerOuterAPI(final NettyClientConfig nettyClientConfig, RPCHook rpcHook) {

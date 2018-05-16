@@ -128,7 +128,7 @@ public class BrokerController {
         this.clientHousekeepingService = new ClientHousekeepingService(this);
         this.broker2Client = new Broker2Client(this);
         this.subscriptionGroupManager = new SubscriptionGroupManager(this);
-        this.brokerOuterAPI = new BrokerOuterAPI(nettyClientConfig);
+        this.brokerOuterAPI = new BrokerOuterAPI(nettyClientConfig,this);
         this.filterServerManager = new FilterServerManager(this);
 
         if (this.brokerConfig.getNamesrvAddr() != null) {
@@ -338,7 +338,7 @@ public class BrokerController {
         sendProcessor.registerSendMessageHook(sendMessageHookList);
         sendProcessor.registerConsumeMessageHook(consumeMessageHookList);
 
-        this.remotingServer.registerProcessor(RequestCode.MASTER_DOWN, sendProcessor, this.sendMessageExecutor);
+        this.remotingServer.registerProcessor(RequestCode.MASTER_DOWN, new MasterDownProcessor(this), this.sendMessageExecutor);
         
         this.remotingServer.registerProcessor(RequestCode.SEND_MESSAGE, sendProcessor, this.sendMessageExecutor);
         
@@ -349,6 +349,8 @@ public class BrokerController {
         this.fastRemotingServer.registerProcessor(RequestCode.SEND_MESSAGE, sendProcessor, this.sendMessageExecutor);
         this.fastRemotingServer.registerProcessor(RequestCode.SEND_MESSAGE_V2, sendProcessor, this.sendMessageExecutor);
         this.fastRemotingServer.registerProcessor(RequestCode.CONSUMER_SEND_MSG_BACK, sendProcessor, this.sendMessageExecutor);
+        
+        this.fastRemotingServer.registerProcessor(RequestCode.MASTER_DOWN, new MasterDownProcessor(this), this.sendMessageExecutor);
         /**
          * PullMessageProcessor
          */
